@@ -12,21 +12,14 @@
               44100
               false))
 
-(def source-info (DataLine$Info.
-                  SourceDataLine
-                  audio-format))
+(defn make-dataline
+  [dataline-class]
+  (cast dataline-class
+        (-> dataline-class (DataLine$Info. audio-format) (AudioSystem/getLine))))
 
-(def source-dataline (cast SourceDataLine (AudioSystem/getLine source-info)))
+(def source-dataline (make-dataline SourceDataLine))
 
-(.open source-dataline)
-
-(def target-info (DataLine$Info.
-                   TargetDataLine
-                   audio-format))
-
-(def target-dataline (cast TargetDataLine (AudioSystem/getLine target-info)))
-
-(.open target-dataline)
+(def target-dataline (make-dataline TargetDataLine))
 
 (def output-stream (ByteOutputStream.))
 
@@ -47,13 +40,20 @@
   []
   (do
     (println "Started Recording...")
+
+    (.open source-dataline)
+    (.open target-dataline)
+
     (force target-delay)
     (Thread/sleep 15000)
     (-> target-dataline (.stop) (.close))
+
     (println "Ended Recording...\nStarted Playback...")
+
     (force source-delay)
     (Thread/sleep 15000)
     (-> source-dataline (.stop) (.close))
+
     (println "Ended Playback...")))
 
 
