@@ -18,49 +18,81 @@
         (-> dataline-class (DataLine$Info. audio-format) (AudioSystem/getLine))))
 
 
+(defn read-from-target
+  [output-stream target-dataline data]
+  (.start target-dataline)
+  (while (not (Thread/interrupted)) (.write output-stream
+                                            data
+                                            0
+                                            (.read target-dataline data 0 (count data)))))
+
 (defn play-to-source
   [output-stream source-dataline]
-  (do
-    (.start source-dataline)
-    (while (not (Thread/interrupted)) (.write source-dataline
-                                              (.toByteArray output-stream)
-                                              0
-                                              (.size output-stream)))))
+  (.start source-dataline)
+  (while (not (Thread/interrupted)) (.write source-dataline
+                                            (.toByteArray output-stream)
+                                            0
+                                            (.size output-stream))))
 
-(defn read-from-target
-  [output-stream target-dataline]
-  (let [data (make-array Byte/TYPE (/ (.getBufferSize target-dataline) 5))]
-    (while (not (Thread/interrupted)) (.write output-stream
-                                              data
-                                              0
-                                              (.read target-dataline data 0 (count data))))))
+
+(defn check-dataline
+  [dataline]
+  (println "\nDataline: " (class dataline) "\nIs Active: " (.isActive dataline)  "\nIs Open: " (.isOpen dataline)  "\nIs Running: " (.isRunning dataline) "\n" ))
 
 (defn execute-neurosway
   []
-  (let [source-dataline (make-dataline SourceDataLine)
+  (let [
+        source-dataline (make-dataline SourceDataLine)
         target-dataline (make-dataline TargetDataLine)
         output-stream (ByteOutputStream.)
-        target-thread (Thread. (read-from-target output-stream target-dataline))
-        source-thread (Thread. (play-to-source output-stream source-dataline))
         ]
     (println "Started Recording...")
 
+    (.open source-dataline)
     (.open target-dataline)
-    (.start target-thread)
-    (Thread/sleep 15000)
-    (-> target-dataline (.stop) (.close))
 
+    (def f (future (read-from-target output-stream target-dataline (make-array Byte/TYPE (/ (.getBufferSize target-dataline) 5)))))
+    (Thread/sleep 5000)
+    (future-cancel f)
+    (.stop target-dataline)
+    (.close target-dataline)
+
+    (println "Recorded: " (get (.toByteArray output-stream) 0))
     (println "Ended Recording...\nStarted Playback...")
 
-    (.open source-dataline)
-    (.start source-thread)
-    (Thread/sleep 15000)
-    (-> source-dataline (.stop) (.close))
+    (def f2 (future (play-to-source output-stream source-dataline)))
+    (Thread/sleep 5000)
+    (future-cancel f2)
 
-    (println "Ended Playback...")))
-
+    (.stop source-dataline)
+    (.close source-dataline)
+    (println "Ended Playback...")
+    ))
 
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
   (execute-neurosway))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
