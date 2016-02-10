@@ -17,28 +17,32 @@
   (cast dataline-class
         (-> dataline-class (DataLine$Info. audio-format) (AudioSystem/getLine))))
 
-(def source-dataline (make-dataline SourceDataLine))
 
-(def target-dataline (make-dataline TargetDataLine))
+(defn record-from-source
+  [output-stream source-dataline]
+  (do
+    (.start source-dataline)
+    (while (not (Thread/interrupted)) (.write source-dataline
+                                              (.toByteArray output-stream)
+                                              0
+                                              (.size output-stream)))))
 
-(def output-stream (ByteOutputStream.))
-
-(def source-delay (delay (do
-                            (.start source-dataline)
-                            (while (not (Thread/interrupted)) (.write source-dataline
-                                                (.toByteArray output-stream)
-                                                0
-                                                (.size output-stream))))))
-
-(def target-delay (delay (let [data (make-array Byte/TYPE (/ (.getBufferSize target-dataline) 5))]
-                            (while (not (Thread/interrupted)) (.write output-stream
-                                                                      data
-                                                                      0
-                                                                      (.read target-dataline data 0 (count data)))))))
+(defn play-to-target
+  [output-stream target-dataline]
+  (let [data (make-array Byte/TYPE (/ (.getBufferSize target-dataline) 5))]
+    (while (not (Thread/interrupted)) (.write output-stream
+                                              data
+                                              0
+                                              (.read target-dataline data 0 (count data))))))
 
 (defn execute-neurosway
   []
-  (do
+  (let [source-dataline (make-dataline SourceDataLine)
+        target-dataline (make-dataline TargetDataLine)
+        output-stream (ByteOutputStream.)
+        source-delay (delay (record-from-source output-stream source-dataline))
+        target-delay (delay (play-to-target output-stream target-dataline))
+        ]
     (println "Started Recording...")
 
     (.open source-dataline)
