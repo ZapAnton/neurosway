@@ -40,21 +40,21 @@
   (let [source-dataline (make-dataline SourceDataLine)
         target-dataline (make-dataline TargetDataLine)
         output-stream (ByteOutputStream.)
-        source-delay (delay (record-from-source output-stream source-dataline))
-        target-delay (delay (play-to-target output-stream target-dataline))
+        source-thread (Thread. (record-from-source output-stream source-dataline))
+        target-thread (Thread. (play-to-target output-stream target-dataline))
         ]
     (println "Started Recording...")
 
     (.open source-dataline)
     (.open target-dataline)
 
-    (force target-delay)
+    (.start target-thread)
     (Thread/sleep 15000)
     (-> target-dataline (.stop) (.close))
 
     (println "Ended Recording...\nStarted Playback...")
 
-    (force source-delay)
+    (.start source-thread)
     (Thread/sleep 15000)
     (-> source-dataline (.stop) (.close))
 
