@@ -18,7 +18,7 @@
         (-> dataline-class (DataLine$Info. audio-format) (AudioSystem/getLine))))
 
 
-(defn record-from-source
+(defn play-to-source
   [output-stream source-dataline]
   (do
     (.start source-dataline)
@@ -27,7 +27,7 @@
                                               0
                                               (.size output-stream)))))
 
-(defn play-to-target
+(defn read-from-target
   [output-stream target-dataline]
   (let [data (make-array Byte/TYPE (/ (.getBufferSize target-dataline) 5))]
     (while (not (Thread/interrupted)) (.write output-stream
@@ -40,8 +40,8 @@
   (let [source-dataline (make-dataline SourceDataLine)
         target-dataline (make-dataline TargetDataLine)
         output-stream (ByteOutputStream.)
-        source-thread (Thread. (record-from-source output-stream source-dataline))
-        target-thread (Thread. (play-to-target output-stream target-dataline))
+        target-thread (Thread. (read-from-target output-stream target-dataline))
+        source-thread (Thread. (play-to-source output-stream source-dataline))
         ]
     (println "Started Recording...")
 
