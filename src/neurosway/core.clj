@@ -45,15 +45,14 @@
         ]
     (println "Started Recording...")
 
-    (.open source-dataline)
     (.open target-dataline)
-
     (.start target-thread)
     (Thread/sleep 15000)
     (-> target-dataline (.stop) (.close))
 
     (println "Ended Recording...\nStarted Playback...")
 
+    (.open source-dataline)
     (.start source-thread)
     (Thread/sleep 15000)
     (-> source-dataline (.stop) (.close))
