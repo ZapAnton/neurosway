@@ -45,24 +45,21 @@
         source-dataline (make-dataline SourceDataLine)
         target-dataline (make-dataline TargetDataLine)
         output-stream (ByteOutputStream.)
+        record-time 5000
         ]
     (println "Started Recording...")
 
     (.open source-dataline)
     (.open target-dataline)
 
-    (def f (future (read-from-target output-stream target-dataline (make-array Byte/TYPE (/ (.getBufferSize target-dataline) 5)))))
-    (Thread/sleep 5000)
-    (future-cancel f)
+    (deref (future (read-from-target output-stream target-dataline (make-array Byte/TYPE (/ (.getBufferSize target-dataline) 5)))) record-time :ok)
     (.stop target-dataline)
     (.close target-dataline)
 
     (println "Recorded: " (get (.toByteArray output-stream) 0))
     (println "Ended Recording...\nStarted Playback...")
 
-    (def f2 (future (play-to-source output-stream source-dataline)))
-    (Thread/sleep 5000)
-    (future-cancel f2)
+    (deref (future (play-to-source output-stream source-dataline)) record-time :ok)
 
     (.stop source-dataline)
     (.close source-dataline)
