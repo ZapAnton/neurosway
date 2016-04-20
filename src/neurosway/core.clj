@@ -1,95 +1,47 @@
-(ns neurosway.core
+(ns clojure-learn.core
   (:gen-class)
-  (:import [javax.sound.sampled AudioFormat AudioFormat$Encoding DataLine$Info SourceDataLine AudioSystem TargetDataLine]
-           (com.sun.xml.internal.messaging.saaj.util ByteOutputStream)))
+  (:import (javax.sound.sampled AudioFormat TargetDataLine DataLine$Info AudioSystem AudioFileFormat$Type AudioFormat$Encoding AudioInputStream)
+           (java.io File)))
+
+(def record-time 6000)
+(def record-file (File. "record.wav"))
 
 (def audio-format (AudioFormat.
-              AudioFormat$Encoding/PCM_SIGNED
-              44100
-              16
-              2
-              4
-              44100
-              false))
+                    AudioFormat$Encoding/PCM_SIGNED
+                    44100
+                    16
+                    2
+                    4
+                    44100
+                    false))
 
-(defn make-dataline
-  [dataline-class]
-  (cast dataline-class
-        (-> dataline-class (DataLine$Info. audio-format) (AudioSystem/getLine))))
+(def file-type AudioFileFormat$Type/WAVE)
 
+(def info (DataLine$Info. TargetDataLine audio-format))
 
-(defn read-from-target
-  [output-stream target-dataline data]
-  (.start target-dataline)
-  (while (not (Thread/interrupted)) (.write output-stream
-                                            data
-                                            0
-                                            (.read target-dataline data 0 (count data)))))
+(defn capture-sound
+  [line]
+  (doto line
+    (.open audio-format)
+    (.start))
+  (println "Start capturing...")
+  (AudioSystem/write (AudioInputStream. line) file-type record-file))
 
-(defn play-to-source
-  [output-stream source-dataline]
-  (.start source-dataline)
-  (while (not (Thread/interrupted)) (.write source-dataline
-                                            (.toByteArray output-stream)
-                                            0
-                                            (.size output-stream))))
-
-
-(defn check-dataline
-  [dataline]
-  (println "\nDataline: " (class dataline) "\nIs Active: " (.isActive dataline)  "\nIs Open: " (.isOpen dataline)  "\nIs Running: " (.isRunning dataline) "\n" ))
-
-(defn execute-neurosway
+(defn record-in-file
   []
-  (let [
-        source-dataline (make-dataline SourceDataLine)
-        target-dataline (make-dataline TargetDataLine)
-        output-stream (ByteOutputStream.)
-        record-time 5000
-        ]
-    (println "Started Recording...")
-
-    (.open source-dataline)
-    (.open target-dataline)
-
-    (deref (future (read-from-target output-stream target-dataline (make-array Byte/TYPE (/ (.getBufferSize target-dataline) 5)))) record-time :ok)
-    (.stop target-dataline)
-    (.close target-dataline)
-
-    (println "Recorded: " (get (.toByteArray output-stream) 0))
-    (println "Ended Recording...\nStarted Playback...")
-
-    (deref (future (play-to-source output-stream source-dataline)) record-time :ok)
-
-    (.stop source-dataline)
-    (.close source-dataline)
-    (println "Ended Playback...")
-    ))
+  (let [line ^TargetDataLine (AudioSystem/getLine info)
+        capture-future (future (capture-sound line))]
+    (Thread/sleep record-time)
+    (future-cancel capture-future)
+    (doto line
+      (.stop)
+      (.close))
+    (println "Finished")))
 
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (execute-neurosway))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  (if (not (AudioSystem/isLineSupported info))
+    (println "Line Is Not Supported. The program will end")
+    (do (println "The line is supported. Sound capture starts now.")
+        (record-in-file))))
