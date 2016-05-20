@@ -273,6 +273,15 @@
 
 (add-watch ITL :key watch)
 
+(defn split-vec
+  [vec]
+  (loop [start-index 0
+         result []]
+    (let [end-index (+ start-index 3)]
+      (if (> end-index (count vec))
+        (conj result (subvec vec start-index (count vec)))
+        (recur (+ start-index 1) (conj result (subvec vec start-index end-index)))))))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
