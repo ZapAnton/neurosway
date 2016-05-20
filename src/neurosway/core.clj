@@ -16,9 +16,11 @@
       (println "The line is supported. Sound capture starts now.")
       (reset! stop-recording false)
       (future (capture-sound))
+
       (Thread/sleep 10000)
       (println "STOPPING THE LINE!")
       (reset! stop-recording true)
+
       (Thread/sleep 1000)
       (println "\n\nWORDS!!!!: " (count @words))
       (reset-sound-system!))))
