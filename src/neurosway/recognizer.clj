@@ -13,17 +13,16 @@
   [frame]
   (map-indexed
     (fn [index item]
-      (* item (- 0.54 (* 0.46 (Math/cos (/ (* 2 Math/PI index) (dec (count frame))))))))
+      (* item (- 0.538 (* 0.462 (Math/cos (/ (* 2 Math/PI index) (dec (count frame))))))))
     frame))
 
-(defn abs-fft
+(defn my-fft
   [frame]
   (let [ff-transformer (DoubleFFT_1D. (count frame))
         transform-data (into-array Double/TYPE (into (into [] frame) (repeat (count frame) 0)))]
     (doto ff-transformer
       (.realForwardFull transform-data ))
-    (vec transform-data)))
-
+    (subvec (vec transform-data) 0 (count frame))))
 
 (def frame-size (* 8 1024))
 (def mel-window [300, 517.33, 781.90, 1103.97, 1496.04, 1973.32, 2554.33, 3261.62, 4122.63, 5170.76, 6446.70, 8000])
@@ -49,8 +48,7 @@
                 (fn [index item]
                   (* item item
                      (mel-filter x index)))
-                frame)
-              ))))
+                frame)))))
 (defn dct
   [mel-vec]
   (for [l (range 1 (inc coef-num))]
@@ -61,10 +59,10 @@
               mel-vec))))
 
 (defn process-sound-data
-  [frames-vec]
-  (->> frames-vec
+  [fragmented-word]
+  (->> fragmented-word
        (map hamming-transform)
-       (map abs-fft)
+       (map my-fft)
        (map get-mel-coefs)
        (map dct)))
 
@@ -99,6 +97,12 @@
   (robot/pause bot 1000)
   (robot/mouse-move bot {:x 350 :y 350}))
 
+(def network-recognizer (enc-nets/network (enc-nets/neural-pattern :feed-forward)
+                                          :activation :sigmoid
+                                          :input 250
+                                          :output 1
+                                          :hidden [600 600]))
+
 (defn train-network
   []
   (let [
@@ -127,5 +131,12 @@
           ]
       (if (= 1 (Math/ceil (first result)))
         (alt-tab)
-        (move-mouse))
-      )))
+        (move-mouse)))))
+
+(defn process-command
+  [word]
+  (let [N (/ (count word) 25)
+        fragmented-word (partition N word)
+        word-parameters (process-sound-data fragmented-word)
+        param-vec (vec (flatten word-parameters))]
+    ))

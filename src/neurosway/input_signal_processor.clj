@@ -1,7 +1,8 @@
 (ns neurosway.input-signal-processor
   (:import (java.io ByteArrayOutputStream)
            (javax.sound.sampled AudioSystem TargetDataLine))
-  (:use neurosway.sound-utils))
+  (:use [neurosway.sound-utils]
+        [neurosway.recognizer]))
 
 (def ITL (atom -1))
 (def ITU (atom -1))
@@ -55,6 +56,7 @@
                                                                                      (reset! recording-word false)
                                                                                      (swap! recorded-data into buffer)
                                                                                      (swap! words conj @recorded-data)
+                                                                                     (process-command @recorded-data)
                                                                                      (reset! recorded-data [])))
 
     (if (> buffer-energy @ITL)
