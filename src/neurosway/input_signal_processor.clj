@@ -20,17 +20,17 @@
 
 (add-watch ITL :key watch)
 
-(defn instant-energy
+(defn- instant-energy
   [buffer]
   (/ (reduce + (pmap #(Math/abs (double %)) buffer)) (count buffer)))
 
-(defn my-signum
+(defn- my-signum
   [num]
   (if (< num 0)
     -1
     1))
 
-(defn zero-crosses-number
+(defn- zero-crosses-number
   [buffer]
   (reduce + (drop 1 (map-indexed (fn [index item]
                                    (when (not (zero? index))
@@ -40,11 +40,12 @@
                                  buffer))))
 
 
-(defn check-frame
+(defn- check-frame
   [buffer]
   (let [buffer-energy (instant-energy buffer)
         buffer-zeroes (zero-crosses-number buffer)]
     (println (str "CHECKING: \nITL = " @ITL "\nBuffer Energy = " buffer-energy))
+
     (cond
       (and (> buffer-energy @ITL) (< buffer-zeroes @IZCT)) (reset! recorded-data (vec buffer))
 
@@ -56,26 +57,19 @@
                                                                                      (reset! recording-word false)
                                                                                      (swap! recorded-data into buffer)
                                                                                      (swap! words conj @recorded-data)
+                                                                                     (future (println "FOUND WORD!!!!"))
                                                                                      (process-command @recorded-data)
                                                                                      (reset! recorded-data [])))
-
-    (if (> buffer-energy @ITL)
-      (do
-        (println "INTO WORD!")
-        (when (not @recording-word)
-          (reset! recording-word true))
-        (swap! recorded-data into buffer)))
     (println)))
 
-(defn process-frame
+(defn- process-frame
   [buffer]
   (if (= -1 @ITL)
     (do
       (reset! ITL (instant-energy buffer))
       (reset! ITU (* @ITL 2.5))
       (reset! IZCT (zero-crosses-number buffer)))
-    (check-frame buffer))
-  )
+    (check-frame buffer)))
 
 (defn capture-sound
   []
@@ -87,11 +81,13 @@
       (.open audio-format)
       (.start))
     (println "STARTED LINE!")
+
     (while (not @stop-recording)
       (let [bytes-read (.read line buffer 0 buffer-size)]
         (when (> bytes-read 0)
           (.write out buffer 0 bytes-read)
           (future (process-frame buffer)))))
+
     (doto line
       (.stop)
       (.close))
