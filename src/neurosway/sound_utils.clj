@@ -2,9 +2,7 @@
   (:import (javax.sound.sampled AudioFormat$Encoding AudioFormat AudioFileFormat$Type DataLine$Info TargetDataLine AudioSystem)
            (java.io File)))
 
-(def record-time 4000)
-(def record-file (File. "sounds/record.wav"))
-
+;;Аудио-формат, с которым рвбответ приложение
 (def audio-format (AudioFormat.
                     AudioFormat$Encoding/PCM_SIGNED
                     44100
@@ -14,12 +12,11 @@
                     44100
                     false))
 
-(def file-type AudioFileFormat$Type/WAVE)
-
 (def info (DataLine$Info. TargetDataLine audio-format))
 
 
 (defn read-wav-file
+  "Получение звуковой информации"
   [filename]
   (let [wav-file (File. filename)
         audio-input-stream (AudioSystem/getAudioInputStream wav-file)

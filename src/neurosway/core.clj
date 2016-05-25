@@ -8,7 +8,7 @@
 
 
 (defn -main
-  "I don't do a whole lot ... yet."
+  "Запуск приложения"
   [& args]
   (if (not (AudioSystem/isLineSupported info))
     (println "Line Is Not Supported. The program will end")

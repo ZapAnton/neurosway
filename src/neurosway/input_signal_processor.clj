@@ -31,6 +31,7 @@
     1))
 
 (defn- zero-crosses-number
+  "Подсчет числа переходов через нуль"
   [buffer]
   (reduce + (drop 1 (map-indexed (fn [index item]
                                    (when (not (zero? index))
@@ -41,6 +42,7 @@
 
 
 (defn- check-frame
+  "Проверка, являетя ли фрейм вокализированным"
   [buffer]
   (let [buffer-energy (instant-energy buffer)
         buffer-zeroes (zero-crosses-number buffer)]
@@ -63,6 +65,7 @@
     (println)))
 
 (defn- process-frame
+  "Вычисление пороговых значений и обработка фрейма"
   [buffer]
   (if (= -1 @ITL)
     (do
@@ -72,6 +75,7 @@
     (check-frame buffer)))
 
 (defn capture-sound
+  "Считывает звуковые данные с звуковой карты, пока значение stop-recording равно false"
   []
   (let [line ^TargetDataLine (AudioSystem/getLine info)
         buffer-size (* (.getSampleRate audio-format) (.getFrameSize audio-format))
@@ -95,6 +99,7 @@
     (println "CLOSED LINE!")))
 
 (defn reset-sound-system!
+  "Сбрасывает состояние пороговых значений и очищает вектора о словами"
   []
   (reset! ITL -1)
   (reset! ITU -1)

@@ -104,6 +104,7 @@
                                           :hidden [600 600]))
 
 (defn train-network
+  "Обучение нейронной сети"
   []
   (let [
         input [@test1-sound-data
@@ -134,6 +135,7 @@
         (move-mouse)))))
 
 (defn process-command
+  "Получение параметров входного слова"
   [word]
   (let [N (/ (count word) 25)
         fragmented-word (partition N word)
